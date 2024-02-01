@@ -2,12 +2,17 @@ package rest
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
-    "github.com/google/uuid"
 	"task_service/types"
 )
 
+// Simple health check, should return 200 if all dependencies are up
+// Currently not implemented
+// TODO: Implement health check
+// TODO: Add logging
+// TODO: Test db connection
 func Ping(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
@@ -15,6 +20,8 @@ func Ping(c *gin.Context) {
 	})
 }
 
+// TODO: Should create task in the DB
+// Also a coroutine that updates the status of the task
 func NewTask(c *gin.Context) {
 
 	c.JSON(http.StatusOK, types.Task{
@@ -23,22 +30,29 @@ func NewTask(c *gin.Context) {
 	})
 }
 
+// TODO: Should read task from DB
+// Return the result as is
 func GetTaskById(c *gin.Context) {
 
 	id, err := uuid.Parse(c.Param("id"))
-    if err != nil {
-        log.Println("Error parsing id: ", err)
-        c.JSON(http.StatusBadRequest, gin.H{
-            "message": "Invalid id",
-        })
-        return
-    }
+	if err != nil {
+		log.Println("Error parsing id: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid id",
+		})
+		return
+	}
 
 	log.Println("Received id: ", id)
 
 	c.JSON(http.StatusOK, types.Task{Id: id, Status: "running"})
 }
 
+// TODO: Should read a page of results from the DB
+// Also provide some filtering options
+// Sorting by date, status, etc
+// Filtering by status, etc
+// Pagination
 func GetTasks(c *gin.Context) {
 
 	list := []types.Task{
