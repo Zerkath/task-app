@@ -1,7 +1,22 @@
 package types
 
+import (
+    "time"
+    "github.com/google/uuid"
+)
+
+type STATUS string
+
+const (
+    RUNNING STATUS = "running"
+    STOPPED STATUS = "stopped"
+    FAILED STATUS = "failed"
+    COMPLETED STATUS = "completed"
+)
+
 type Task struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	Id     uuid.UUID `json:"id"`
+	Status STATUS `json:"status"`
+	CompletedAt time.Time `json:"completedAt"`
 }
 
