@@ -1,32 +1,50 @@
 package rest
 
 import (
+	"log"
+	// "math/rand"
+	"net/http"
+	"task-service/db"
+	"task-service/types"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"log"
-	"net/http"
-	"task_service/types"
 )
 
-// Simple health check, should return 200 if all dependencies are up
-// Currently not implemented
-// TODO: Implement health check
-// TODO: Add logging
-// TODO: Test db connection
+// Simple health check
 func Ping(c *gin.Context) {
+
+	err := db.TestConnection()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Database connection error",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Service up",
 	})
 }
 
-// TODO: Should create task in the DB
-// Also a coroutine that updates the status of the task
 func NewTask(c *gin.Context) {
 
-	c.JSON(http.StatusOK, types.Task{
-		Id:     uuid.MustParse("63dc6aa8-3db1-4ceb-b578-3944b4947f1a"),
-		Status: "running",
+	vUuid := uuid.New()
+	r, e := db.CONNECTION.Exec("INSERT INTO task (id, status) VALUES ($1, $2)", vUuid, "running")
+
+	if e != nil {
+		log.Println("Error inserting task: ", e)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error inserting task",
+		})
+		return
+	}
+
+	log.Println("Result: ", r)
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":     vUuid.String(),
+		"status": "running",
 	})
 }
 
@@ -45,7 +63,36 @@ func GetTaskById(c *gin.Context) {
 
 	log.Println("Received id: ", id)
 
-	c.JSON(http.StatusOK, types.Task{Id: id, Status: "running"})
+	rows, err := db.CONNECTION.Query("SELECT status, completed_at FROM task WHERE id = $1", id.String())
+	if err != nil {
+		log.Println("Error reading task: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error reading task",
+		})
+		return
+	}
+
+	if !rows.Next() {
+		log.Println("No task found with id: ", id)
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "Task not found",
+		})
+		return
+	}
+
+	task := types.Task{Id: id, Status: "running"}
+
+    // in microseconds
+	var completedAt int64
+
+	rows.Scan(&task.Status, &completedAt)
+
+	if completedAt > 0 {
+		log.Println("Task completed at: ", completedAt)
+		task.CompletedAt = int32(completedAt / 1000 / 1000) // convert to seconds, for unix timestamp
+	}
+
+	c.JSON(http.StatusOK, task)
 }
 
 // TODO: Should read a page of results from the DB

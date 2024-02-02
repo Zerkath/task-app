@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
-    "task_service/rest"
-    "task_service/db"
+    "task-service/rest"
+    "task-service/db"
     "time"
     "log"
 )
@@ -25,16 +25,16 @@ func main() {
     // func(db *sqlx.DB) error
     // Potentially signature could be combination of both
     // func(c *gin.Context, db *sqlx.DB) error, but unclear if gin supports this
-    db := db.ConnectDB(
+    db.CONNECTION = db.ConnectDB(
         "localhost", 
         5432, 
         "postgres", 
         "postgres", 
         "postgres",
     )
-    defer db.Close()
+    defer db.CONNECTION.Close()
 
-    x := db.MustExec("SELECT 1")
+    x := db.CONNECTION.MustExec(db.DB_SCHEMA)
     log.Printf("Result: %v\n", x)
 
 	route.GET("/", rest.Ping)

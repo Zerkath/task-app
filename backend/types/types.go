@@ -1,15 +1,14 @@
 package types
 
 import (
-    "time"
     "github.com/google/uuid"
 )
 
 type STATUS string
 
 const (
+    QUEUED STATUS = "queued"
     RUNNING STATUS = "running"
-    STOPPED STATUS = "stopped"
     FAILED STATUS = "failed"
     COMPLETED STATUS = "completed"
 )
@@ -17,6 +16,7 @@ const (
 type Task struct {
 	Id     uuid.UUID `json:"id"`
 	Status STATUS `json:"status"`
-	CompletedAt time.Time `json:"completedAt"`
+    // should be omitted if nil
+	CompletedAt int32 `json:"completedAt,omitempty"`
 }
 

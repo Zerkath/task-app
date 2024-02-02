@@ -7,17 +7,22 @@ import (
 )
 
 const DB_SCHEMA = `
-CREATE TYPE IF NOT EXISTS task_status AS ENUM (
-    "running",
-    "stopped",
-    "failed"
-    "completed"
-);
 
+DO $$
+BEGIN 
+    IF NOT EXISTS (select 1 from pg_type where typname = 'task_status')  THEN
+        CREATE TYPE task_status AS ENUM (
+            'queued',
+            'running',
+            'failed'
+            'completed'
+        );
+    END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS task (
     id uuid PRIMARY KEY,
-    status task_status NOT NULL
+    status task_status NOT NULL,
     completed_at timestamp
 );`
 
