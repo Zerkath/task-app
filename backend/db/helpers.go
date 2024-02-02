@@ -7,6 +7,12 @@ import (
     _ "github.com/lib/pq"
 )
 
+var CONNECTION *sqlx.DB
+
+func TestConnection() error {
+    return CONNECTION.Ping()
+}
+
 func ConnectDB(host string, port int, user string, password string, dbname string) *sqlx.DB {
 
 	db, err := sqlx.Open(
