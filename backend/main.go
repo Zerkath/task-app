@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"log"
+	"task-service/repository"
+	"task-service/rest"
+    "task-service/types"
+	"time"
+
 	"github.com/gin-gonic/gin"
-    "github.com/gorilla/websocket"
-    "task-service/rest"
-    "task-service/db"
-    "time"
-    "log"
+	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5"
 )
 
 func main() {
@@ -17,28 +21,18 @@ func main() {
     }
 
 	route := gin.Default()
+    ctx := context.Background()
+    conn, err := pgx.Connect(ctx, "host=localhost user=postgres password=postgres dbname=tasks sslmode=disable")
 
-    // TODO: Should find a better mechanism to share the connection between endpoints
-    // Currently the way is not clear, as the signature for the endpoints is expected to be of
-    // func(c *gin.Context)
-    // and the signature for the db connection is of
-    // func(db *sqlx.DB) error
-    // Potentially signature could be combination of both
-    // func(c *gin.Context, db *sqlx.DB) error, but unclear if gin supports this
-    db.CONNECTION = db.ConnectDB(
-        "localhost", 
-        5432, 
-        "postgres", 
-        "postgres", 
-        "postgres",
-    )
-    defer db.CONNECTION.Close()
+    if err != nil {
+        log.Fatalln("Error connecting to database: ", err)
+    }
+    defer conn.Close(ctx)
 
-    x := db.CONNECTION.MustExec(db.DB_SCHEMA)
-    log.Printf("Result: %v\n", x)
-
+    types.Conn = conn
+    types.Repository = repository.New(conn)
+    
 	route.GET("/", rest.Ping)
-
 	route.POST("/task", rest.NewTask)
 	route.GET("/task/:id", rest.GetTaskById)
 	route.GET("/task/listen/:id", func(c *gin.Context) {
