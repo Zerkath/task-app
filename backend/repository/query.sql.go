@@ -61,9 +61,9 @@ LIMIT $1 OFFSET $2
 `
 
 type GetTasksParams struct {
-	Limit  int32
-	Offset int32
-	Status NullTaskStatus
+	Limit  int32          `json:"limit"`
+	Offset int32          `json:"offset"`
+	Status NullTaskStatus `json:"status"`
 }
 
 func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, error) {
@@ -119,10 +119,10 @@ RETURNING id, status, created_at, completed_at, restarts
 `
 
 type UpdateTaskParams struct {
-	Status      TaskStatus
-	CompletedAt pgtype.Timestamp
-	Restarts    pgtype.Int4
-	ID          pgtype.UUID
+	Status      TaskStatus       `json:"status"`
+	CompletedAt pgtype.Timestamp `json:"completedAt"`
+	Restarts    pgtype.Int4      `json:"restarts"`
+	ID          pgtype.UUID      `json:"id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
