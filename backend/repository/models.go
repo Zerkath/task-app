@@ -33,8 +33,8 @@ func (e *TaskStatus) Scan(src interface{}) error {
 }
 
 type NullTaskStatus struct {
-	TaskStatus TaskStatus
-	Valid      bool // Valid is true if TaskStatus is not NULL
+	TaskStatus TaskStatus `json:"taskStatus"`
+	Valid      bool       `json:"valid"` // Valid is true if TaskStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -56,9 +56,9 @@ func (ns NullTaskStatus) Value() (driver.Value, error) {
 }
 
 type Task struct {
-	ID          pgtype.UUID
-	Status      TaskStatus
-	CreatedAt   pgtype.Timestamp
-	CompletedAt pgtype.Timestamp
-	Restarts    pgtype.Int4
+	ID          pgtype.UUID      `json:"id"`
+	Status      TaskStatus       `json:"status"`
+	CreatedAt   pgtype.Timestamp `json:"createdAt"`
+	CompletedAt pgtype.Timestamp `json:"completedAt"`
+	Restarts    pgtype.Int4      `json:"restarts"`
 }

@@ -8,6 +8,7 @@ import (
     "task-service/types"
 	"time"
 
+    "github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5"
@@ -20,7 +21,21 @@ func main() {
         WriteBufferSize: 1024,
     }
 
-	route := gin.Default()
+	router := gin.Default()
+
+    router.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"*"},
+        AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "DELETE"},
+        AllowHeaders:     []string{"Origin", "Content-Type"},
+        ExposeHeaders:    []string{"Content-Length"},
+        AllowCredentials: true,
+        AllowOriginFunc: func(origin string) bool {
+            return true // TODO: Should be a list of allowed origins
+        },
+        MaxAge: 12 * time.Hour,
+    }))
+
+
     ctx := context.Background()
     conn, err := pgx.Connect(ctx, "host=localhost user=postgres password=postgres dbname=tasks sslmode=disable")
 
@@ -32,10 +47,10 @@ func main() {
     types.Conn = conn
     types.Repository = repository.New(conn)
     
-	route.GET("/", rest.Ping)
-	route.POST("/task", rest.NewTask)
-	route.GET("/task/:id", rest.GetTaskById)
-	route.GET("/task/listen/:id", func(c *gin.Context) {
+	router.GET("/", rest.Ping)
+	router.POST("/task", rest.NewTask)
+	router.GET("/task/:id", rest.GetTaskById)
+	router.GET("/task/listen/:id", func(c *gin.Context) {
         conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
         if err != nil {
             log.Println("Error upgrading connection: ", err)
@@ -54,11 +69,11 @@ func main() {
         }
     })
 
-	route.GET("/task", rest.GetTasks)
+	router.GET("/task", rest.GetTasks)
 
     // disable trusted proxies
-    route.SetTrustedProxies([]string{})
+    router.SetTrustedProxies([]string{})
 
     // TODO: Should be env variable or default
-	route.Run(":8080")
+	router.Run(":8080")
 }
