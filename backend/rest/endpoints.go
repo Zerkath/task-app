@@ -78,8 +78,8 @@ func GetTasks(c *gin.Context) {
 
 	queryParams := c.Request.URL.Query()
 
-	args.Limit = int32(types.ToInt(queryParams.Get("limit"), 10))
-	args.Offset = int32(types.ToInt(queryParams.Get("offset"), 0))
+	args.Limit = int32(types.ToInt(queryParams.Get("size"), 10))
+	args.Offset = int32(types.ToInt(queryParams.Get("page"), 0)) * args.Limit
 	args.Status = repository.NullTaskStatus{}
 	status := queryParams.Get("status")
 	if len(status) > 0 {
@@ -101,4 +101,30 @@ func GetTasks(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, list)
+}
+
+func RemoveTask(c *gin.Context) {
+
+    idx := pgtype.UUID{}
+    err := idx.Scan(c.Param("id"))
+    if err != nil {
+        log.Println("Error parsing id: ", err)
+        c.JSON(http.StatusBadRequest, gin.H{
+            "message": "Invalid id",
+        })
+        return
+    }
+
+    err = types.Repository.DeleteTask(c, idx)
+    if err != nil {
+        log.Println("Error removing task: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "message": "Error removing task",
+        })
+        return
+    }
+
+    c.JSON(http.StatusNoContent, gin.H{
+        "message": "Task removed",
+    })
 }

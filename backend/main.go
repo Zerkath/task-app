@@ -50,6 +50,7 @@ func main() {
 	router.GET("/", rest.Ping)
 	router.POST("/task", rest.NewTask)
 	router.GET("/task/:id", rest.GetTaskById)
+    router.DELETE("/task/:id", rest.RemoveTask)
 	router.GET("/task/listen/:id", func(c *gin.Context) {
         conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
         if err != nil {

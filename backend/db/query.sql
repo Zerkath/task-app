@@ -24,8 +24,7 @@ SET status = $1, completed_at = $2, restarts = $3
 WHERE id = $4
 RETURNING id, status, created_at, completed_at, restarts;
 
--- name: DeleteTask :one
+-- name: DeleteTask :exec
 DELETE FROM task
-WHERE id = $1
-RETURNING id, status, created_at, completed_at, restarts;
+WHERE id = $1;
 
