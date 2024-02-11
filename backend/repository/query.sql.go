@@ -11,23 +11,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const deleteTask = `-- name: DeleteTask :one
+const deleteTask = `-- name: DeleteTask :exec
 DELETE FROM task
 WHERE id = $1
-RETURNING id, status, created_at, completed_at, restarts
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id pgtype.UUID) (Task, error) {
-	row := q.db.QueryRow(ctx, deleteTask, id)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.Status,
-		&i.CreatedAt,
-		&i.CompletedAt,
-		&i.Restarts,
-	)
-	return i, err
+func (q *Queries) DeleteTask(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTask, id)
+	return err
 }
 
 const getTaskById = `-- name: GetTaskById :one
