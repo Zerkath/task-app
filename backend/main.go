@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -44,12 +44,13 @@ func main() {
 
 
     ctx := context.Background()
-    conn, err := pgx.Connect(ctx, "host=localhost user=postgres password=postgres dbname=tasks sslmode=disable")
+    conn, err := pgxpool.New(ctx, "host=localhost user=postgres password=postgres dbname=tasks sslmode=disable")
+
 
     if err != nil {
         log.Fatalln("Error connecting to database: ", err)
     }
-    defer conn.Close(ctx)
+    defer conn.Close()
 
     types.Conn = conn
     types.Repository = repository.New(conn)
