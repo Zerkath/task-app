@@ -13,6 +13,14 @@ OR status in (sqlc.narg('status')::task_status)
 ORDER BY created_at, status DESC
 LIMIT $1 OFFSET $2;
 
+-- name: GetUncompletedTasks :many
+SELECT
+    id, status, created_at, completed_at, restarts
+FROM task
+WHERE status != 'completed' 
+ORDER BY created_at, status DESC
+LIMIT $1 OFFSET $2;
+
 -- name: NewTask :one
 INSERT INTO task
 DEFAULT VALUES

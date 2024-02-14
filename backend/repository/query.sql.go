@@ -83,6 +83,46 @@ func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, err
 	return items, nil
 }
 
+const getUncompletedTasks = `-- name: GetUncompletedTasks :many
+SELECT
+    id, status, created_at, completed_at, restarts
+FROM task
+WHERE status != 'completed' 
+ORDER BY created_at, status DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetUncompletedTasksParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetUncompletedTasks(ctx context.Context, arg GetUncompletedTasksParams) ([]Task, error) {
+	rows, err := q.db.Query(ctx, getUncompletedTasks, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.CreatedAt,
+			&i.CompletedAt,
+			&i.Restarts,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const newTask = `-- name: NewTask :one
 INSERT INTO task
 DEFAULT VALUES
