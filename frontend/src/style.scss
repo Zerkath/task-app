@@ -1,36 +1,30 @@
-
-$failed-text: #ff0000;
-$failed-bg: #ffcccc;
-
-$completed-text: #1f1f1f;
+$text-color: #1f1f1f;
+$failed-bg: #ffaaaa;
 $completed-bg: #77ff77;
-
-$running-text: #0000ff;
 $running-bg: #ccccff;
-
-$queued-text: #ffff00;
-$queued-bg: #ffffcc;
+$queued-bg: #cccccc;
 
 body {
+  line-height: 1;
   font-family: Arial, sans-serif;
 }
 
 .failed {
-    color: $failed-text;
-    background-color: $failed-bg;
+    background: $failed-bg;
 }
 
 .completed {
-    color: $completed-text;
-    background-color: $completed-bg;
+    background: $completed-bg;
 }
 
 .running {
-    color: $running-text;
-    background-color: $running-bg;
+    background: $running-bg;
 }
 
 .queued {
-    color: $queued-text;
-    background-color: $queued-bg;
+    background: $queued-bg;
+}
+
+.queued, .running, .completed, .failed {
+    color: $text-color;
 }

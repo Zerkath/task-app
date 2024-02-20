@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
+    import { parseDefault } from '$lib/utils';
 	import type { Message } from '$lib/types';
 	let socket: WebSocket | null = null;
 
@@ -43,67 +44,56 @@
 		dispatch('close');
 	}
 
-	function getDefault(x: string | undefined): string {
-		return x ? x : '';
-	}
-
 </script>
 
 {#if minimized}
-	<button class={`${getDefault(message?.status)}`} on:click={() => (minimized = false)}>
-		{id.split('-')[0]} - {getDefault(message?.status)}</button
+	<button class={`${parseDefault(message?.status)}`} on:click={() => (minimized = false)}>
+		{parseDefault(id).split('-')[0]} - {parseDefault(message?.status)}</button
 	>
 {:else}
-	<button class={`${getDefault(message?.status)}`} on:click={() => (minimized = true)}
+	<button class={`${parseDefault(message?.status)}`} on:click={() => (minimized = true)}
 		>Opened</button
 	>
-	<div class={`listen-modal ${getDefault(message?.status)}`} {hidden}>
+	<div class={`listen-modal ${parseDefault(message?.status)}`} {hidden}>
+        <div class="controls">
+            <button on:click={close}>Close</button>
+            <button on:click={() => (minimized = true)}>Minimize</button>
+        </div>
+
 		<p>Task {id}</p>
 
 		{#if message}
 			<p>{message.status}</p>
-			<p>Completed at: {getDefault(message.completedAt)}</p>
+			<p>Completed at: {parseDefault(message.completedAt)}</p>
 		{/if}
 
-		<button on:click={close}>Close</button>
-		<button on:click={() => (minimized = true)}>Minimize</button>
 	</div>
 {/if}
 
-<style>
+<style lang="scss">
 	.listen-modal {
-		padding: 20px;
+        border-radius: 5px;
+		padding: 8px 12px;
 		position: fixed;
 		margin-top: 50px;
 		left: 50%;
-		margin-left: -300px;
-		width: 600px;
-		background-color: white;
+		margin-left: -200px;
+		width: 400px;
+        box-shadow: 0 0 10px 0 black;
 		border: 1px solid black;
 		align-items: center;
 	}
 
-	.failed {
-		color: white;
-		background: red;
-	}
+    .controls {
+        display: flex;
+        flex-direction: row-reverse;
+        * {
+            margin-left: 5px;
+            background-color: #3f3f3f;
+            border-radius: 5px;
+            border: none;
+            color: #dfdfdf;
+        }
+    }
 
-	.completed {
-		color: white;
-		background: green;
-	}
-
-	.queued {
-		color: black;
-		background: grey;
-	}
-
-	.running {
-		color: white;
-		background: blue;
-	}
-
-	p {
-		font-weight: bold;
-	}
 </style>

@@ -1,76 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { pageStore } from '$lib/store';
-	import type { Message } from '$lib/types';
+	import { pageStore, pageSettings } from '$lib/store';
+    import type { PageSettings } from '$lib/types';
+    import { getPage, changePage, newTask, deleteTask, parseDefault } from '$lib/utils'
 	import ListenModal from '$lib/ListenModal.svelte';
-
-	let currentPage = 0;
-	let pageSize = 10;
-	let pages = 0;
 
     let listeningTo: string[] = [];
 
-	async function getPage(pageNum: number) {
-        pages = Math.ceil($pageStore.count / pageSize);
-		const url = `http://localhost:8080/task?size=${pageSize}&page=${pageNum}`;
+    let pagination: PageSettings = {
+        pages: 0,
+        currentPage: 0,
+        pageSize: 10,
+    }
 
-		return fetch(url, {
-			method: 'GET'
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				if (typeof data === 'object' && !data.data) {
-					return; // should check if the response is valid
-				}
-				pageStore.set(data);
-			})
-			.catch((err) => {
-				console.error(err);
-				pageStore.set({
-					data: [] as Message[],
-					page: 0,
-					count: 0
-				});
-			});
-	}
-
-	async function changePage(offSet: number) {
-		if (currentPage + offSet < 0) {
-			return;
-		}
-		currentPage += offSet;
-		await getPage(currentPage);
-	}
-
-	async function newTask() {
-		const url = `http://localhost:8080/task`;
-
-		return fetch(url, {
-			method: 'POST'
-		})
-			.then((response) => response.json())
-			.then((data) => {
-                listenTo(data.id);
-				getPage(currentPage);
-			})
-			.catch((err) => {
-				console.error(err);
-			});
-	}
-
-	async function deleteTask(id: string) {
-		const url = `http://localhost:8080/task/${id}`;
-
-		return fetch(url, {
-			method: 'DELETE'
-		})
-			.then((_) => {
-				getPage(currentPage);
-			})
-			.catch((err) => {
-				console.error(err);
-			});
-	}
+    pageSettings.subscribe((value) => {
+        pagination = value;
+    });
 
     function listenTo(id: string) {
         listeningTo = [...listeningTo, id]; // reassign to trigger reactivity
@@ -80,31 +25,36 @@
     }
 
 	onMount(async () => {
-		await getPage(currentPage);
-        pages = Math.ceil($pageStore.count / pageSize);
+		await getPage();
 	});
 </script>
 
 <h1>Demo application</h1>
 
-<p>Page: {currentPage + 1} out of {pages}</p>
+<p>Page: {pagination.currentPage + 1} out of {pagination.pages}</p>
 
-<button on:click={() => changePage(-1)} disabled={currentPage < 1}>{'<<'}</button>
-<button on:click={() => changePage(1)} disabled={currentPage >= pages - 1}>{'>>'}</button>
-<button on:click={() => getPage(currentPage)}>{'Refresh'}</button>
+<button on:click={() => changePage(-1)} disabled={pagination.currentPage < 1}>{'<<'}</button>
+<button on:click={() => changePage(1)} disabled={pagination.currentPage >= pagination.pages - 1}>{'>>'}</button>
+<button on:click={() => getPage()}>{'Refresh'}</button>
 
 <input
 	type="number"
-	bind:value={pageSize}
-	min="10"
+	bind:value={$pageSettings.pageSize}
+	min="5"
 	max="100"
-	step="10"
+	step="5"
 	on:change={() => {
-		getPage(currentPage);
+		getPage();
 	}}
 />
 
-<button on:click={() => newTask()}>New task</button>
+<button on:click={() => newTask().then((id) => listenTo(id))}>New task</button>
+
+<p>Awaiting updates from following tasks</p>
+
+{#if listeningTo.length === 0}
+    <span>None</span>
+{/if}
 
 {#each listeningTo as id}
     <ListenModal bind:id={id} on:close={() => removeId(id)} />
@@ -124,7 +74,7 @@
 			<td class="centered">{item.id}</td>
 			<td class={`centered ${item.status}`}>{item.status}</td>
 			<td>{item.createdAt}</td>
-            <td>{item.completedAt}</td>
+            <td>{parseDefault(item.completedAt)}</td>
 			<td class="centered">{item.restarts}</td>
 			<td class="centered">
 				<button on:click={() => deleteTask(item.id)}>Delete</button>
@@ -137,13 +87,14 @@
 <style lang="scss">
 	table {
 		width: 100%;
+        margin-top: 20px;
 		border-collapse: collapse;
 	}
 
 	th,
 	td {
 		border: 1px solid black;
-		padding: 8px;
+		padding: 4px;
 		text-align: left;
 	}
 
