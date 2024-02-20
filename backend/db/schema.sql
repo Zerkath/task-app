@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS task (
     restarts int DEFAULT 0
 );
 
+CREATE INDEX IF NOT EXISTS task_page_index 
+ON task (created_at, status, id);

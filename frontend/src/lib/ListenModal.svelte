@@ -2,13 +2,17 @@
 	import { onMount, createEventDispatcher } from 'svelte';
 	import type { Message } from '$lib/types';
 	let socket: WebSocket | null = null;
+
 	export let id: string | undefined = undefined;
+	let minimized: boolean = false;
+
 	let hidden = true;
 	let closed = false;
 
 	let message: Message;
 
 	const dispatch = createEventDispatcher();
+
 	onMount(() => {
 		if (!id) {
 			return;
@@ -38,18 +42,33 @@
 		}
 		dispatch('close');
 	}
+
+	function getDefault(x: string | undefined): string {
+		return x ? x : '';
+	}
+
 </script>
 
-<div class={`listen-modal ${message?.status ? message.status : ''}`} {hidden}>
-	<p>Task {id}</p>
+{#if minimized}
+	<button class={`${getDefault(message?.status)}`} on:click={() => (minimized = false)}>
+		{id.split('-')[0]} - {getDefault(message?.status)}</button
+	>
+{:else}
+	<button class={`${getDefault(message?.status)}`} on:click={() => (minimized = true)}
+		>Opened</button
+	>
+	<div class={`listen-modal ${getDefault(message?.status)}`} {hidden}>
+		<p>Task {id}</p>
 
-	{#if message}
-		<p>{message.status}</p>
-		<p>Completed at: {message.completedAt ? message.completedAt : ''}</p>
-	{/if}
+		{#if message}
+			<p>{message.status}</p>
+			<p>Completed at: {getDefault(message.completedAt)}</p>
+		{/if}
 
-	<button on:click={close}>Close</button>
-</div>
+		<button on:click={close}>Close</button>
+		<button on:click={() => (minimized = true)}>Minimize</button>
+	</div>
+{/if}
 
 <style>
 	.listen-modal {

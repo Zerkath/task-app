@@ -1,0 +1,36 @@
+
+$failed-text: #ff0000;
+$failed-bg: #ffcccc;
+
+$completed-text: #1f1f1f;
+$completed-bg: #77ff77;
+
+$running-text: #0000ff;
+$running-bg: #ccccff;
+
+$queued-text: #ffff00;
+$queued-bg: #ffffcc;
+
+body {
+  font-family: Arial, sans-serif;
+}
+
+.failed {
+    color: $failed-text;
+    background-color: $failed-bg;
+}
+
+.completed {
+    color: $completed-text;
+    background-color: $completed-bg;
+}
+
+.running {
+    color: $running-text;
+    background-color: $running-bg;
+}
+
+.queued {
+    color: $queued-text;
+    background-color: $queued-bg;
+}

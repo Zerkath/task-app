@@ -46,7 +46,6 @@ func main() {
     ctx := context.Background()
     conn, err := pgxpool.New(ctx, "host=localhost user=postgres password=postgres dbname=tasks sslmode=disable")
 
-
     if err != nil {
         log.Fatalln("Error connecting to database: ", err)
     }
@@ -56,9 +55,13 @@ func main() {
     types.Repository = repository.New(conn)
     
 	router.GET("/", rest.Ping)
+
 	router.POST("/task", rest.NewTask)
+	router.GET("/task", rest.GetTasks)
+
 	router.GET("/task/:id", rest.GetTaskById)
     router.DELETE("/task/:id", rest.RemoveTask)
+
 	router.GET("/task/listen/:id", func(c *gin.Context) {
         conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
         if err != nil {
@@ -78,12 +81,37 @@ func main() {
             })
             return
         }
+
         log.Println("Listening for task: ", c.Param("id"))
+
+        // Keeping track of task between sleeps to reduce the amount of messages needed between client and server
+        prevTask, err := types.Repository.GetTaskById(ctx, idx)
+
+        if err != nil {
+            log.Println("Error getting task: ", err)
+            conn.WriteJSON(ErrorMessage{
+                message: "Error getting task",
+                mType:  "error",
+            })
+            return
+        }
+
+        err = conn.WriteJSON(prevTask)
+        if err != nil {
+            log.Println("Error writing to socket: ", err)
+            return
+        }
+
         for {
             task, err := types.Repository.GetTaskById(ctx, idx)
 
-            err = conn.WriteJSON(task)
-            
+            // Send updated task to client if status has changed
+            // otherwise we can skip sending the same task again
+            if prevTask.Status != task.Status {
+                err = conn.WriteJSON(task)
+            }
+            prevTask = task
+
             if err != nil {
                 log.Println("Failed to write to socket, might be closed?")
                 return
@@ -92,11 +120,10 @@ func main() {
                 log.Println("Task completed, closing connection")
                 return
             }
-            time.Sleep(250 * time.Millisecond)
+            time.Sleep(1 * time.Second)
         }
     })
 
-	router.GET("/task", rest.GetTasks)
 
     // disable trusted proxies
     router.SetTrustedProxies([]string{})
@@ -125,13 +152,10 @@ func queueHandler(ctx context.Context) {
     }
 
     for {
-        log.Println("Getting tasks")
         tasks, err := types.Repository.GetUncompletedTasks(ctx, args)
         if err != nil {
             log.Println("Error getting tasks: ", err)
         }
-
-        log.Println("Got tasks: ", len(tasks))
 
         for _, task := range tasks {
             readableUUID := uuid.UUID(task.ID.Bytes).String()

@@ -1,5 +1,11 @@
 export type Status = "completed" | "failed" | "running" | "queued"
 
+export type Page = {
+    data: Message[];
+    page: number;
+    count: number;
+}
+
 export type Message = {
     id: string;
     completedAt?: string;
