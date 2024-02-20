@@ -78,14 +78,22 @@ func GetTasks(c *gin.Context) {
 
 	queryParams := c.Request.URL.Query()
 
-	args.Limit = int32(types.ToInt(queryParams.Get("size"), 10))
-	args.Offset = int32(types.ToInt(queryParams.Get("page"), 0)) * args.Limit
+    currPage := types.ToInt(queryParams.Get("page"), 0)
+    pageSize := types.ToInt(queryParams.Get("size"), 10)
+    if pageSize < 1 {
+        pageSize = 1 // prevent division by zero
+    }
+	args.Limit = int32(pageSize)
+	args.Offset = int32(currPage) * args.Limit
 	args.Status = repository.NullTaskStatus{}
+    taskCountArgs := repository.NullTaskStatus{}
 	status := queryParams.Get("status")
 	if len(status) > 0 {
 		args.Status.Scan(status)
+        taskCountArgs.Scan(status)
 	} else {
 		args.Status.Valid = false
+        taskCountArgs.Valid = false
 	}
 
 	list, err := types.Repository.GetTasks(c, args)
@@ -100,7 +108,22 @@ func GetTasks(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, list)
+    count, err := types.Repository.GetTaskCount(c, taskCountArgs)
+    if err != nil {
+        log.Println("Error reading task count: ", err)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "message": "Error reading task count",
+        })
+        return
+    }
+
+    page := types.Page {
+        Count: count,
+        Page: currPage,
+        Data: list,
+    }
+
+	c.JSON(http.StatusOK, page)
 }
 
 func RemoveTask(c *gin.Context) {

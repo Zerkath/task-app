@@ -2,6 +2,7 @@ package types
 
 import (
     "github.com/google/uuid"
+    "task-service/repository"
 )
 
 type STATUS string
@@ -20,3 +21,8 @@ type Task struct {
 	CompletedAt int32 `json:"completedAt,omitempty"`
 }
 
+type Page struct {
+    Count int64 `json:"count"`
+    Page int `json:"page"`
+    Data []repository.Task `json:"data"`
+}

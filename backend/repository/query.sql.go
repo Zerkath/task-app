@@ -41,13 +41,27 @@ func (q *Queries) GetTaskById(ctx context.Context, id pgtype.UUID) (Task, error)
 	return i, err
 }
 
+const getTaskCount = `-- name: GetTaskCount :one
+SELECT COUNT(*)
+FROM task
+WHERE $1::task_status IS NULL
+OR status in ($1::task_status)
+`
+
+func (q *Queries) GetTaskCount(ctx context.Context, status NullTaskStatus) (int64, error) {
+	row := q.db.QueryRow(ctx, getTaskCount, status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getTasks = `-- name: GetTasks :many
 SELECT
     id, status, created_at, completed_at, restarts
 FROM task
 WHERE $3::task_status IS NULL
 OR status in ($3::task_status)
-ORDER BY created_at, status DESC
+ORDER BY created_at, status, id DESC
 LIMIT $1 OFFSET $2
 `
 
@@ -88,7 +102,7 @@ SELECT
     id, status, created_at, completed_at, restarts
 FROM task
 WHERE status != 'completed' 
-ORDER BY created_at, status DESC
+ORDER BY created_at, status, id DESC
 LIMIT $1 OFFSET $2
 `
 
