@@ -15,3 +15,9 @@ export type Message = {
     mType: String
 }
 
+export type PageSettings = {
+    pageSize: number;
+    currentPage: number;
+    pages: number;
+}
+
