@@ -14,7 +14,7 @@ This way the user immediately can move on to do other things, and check on the s
 In the video 3 tasks are created, each gets processed one by one until completion.
 If the task would fail, it would restart after some delay.
 
-![Video of demonstration](./docs/demo.webm)
+![Video of demonstration](./docs/demo.gif)
 
 ## Areas of improvement
 
