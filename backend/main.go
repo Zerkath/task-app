@@ -125,8 +125,8 @@ func queueHandler(ctx context.Context) {
 				}
 			}
 
-			time.Sleep(3 * time.Second) // simulate delay between starting next task
+			time.Sleep(2 * time.Second) // simulate delay between starting next task
 		}
-		time.Sleep(30 * time.Second) // process batches every 30 seconds
+		time.Sleep(5 * time.Second) // process batches every 5 seconds
 	}
 }

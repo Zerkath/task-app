@@ -62,6 +62,13 @@
 		socket.onclose = () => {
 			console.log('Socket closed');
 		};
+
+        while (true) {
+            // This is a simple hack to recheck the current page, this update should come from the socket instead
+            // TODO: Implement a proper way to update the page
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            getPage();
+        }
 	});
 
 	function updateListening() {
