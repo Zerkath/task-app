@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS task (
 );
 
 CREATE INDEX IF NOT EXISTS task_page_index 
-ON task (created_at, status, id);
+ON task (status, created_at, id);
