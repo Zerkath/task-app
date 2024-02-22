@@ -61,7 +61,7 @@ SELECT
 FROM task
 WHERE $3::task_status IS NULL
 OR status in ($3::task_status)
-ORDER BY created_at, status, id DESC
+ORDER BY status, created_at, id DESC
 LIMIT $1 OFFSET $2
 `
 
@@ -97,12 +97,46 @@ func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, err
 	return items, nil
 }
 
+const getTasksByIds = `-- name: GetTasksByIds :many
+SELECT
+    id, status, created_at, completed_at, restarts
+FROM task
+WHERE id = ANY($1::uuid[])
+ORDER BY status, created_at, id DESC
+`
+
+func (q *Queries) GetTasksByIds(ctx context.Context, ids []pgtype.UUID) ([]Task, error) {
+	rows, err := q.db.Query(ctx, getTasksByIds, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.CreatedAt,
+			&i.CompletedAt,
+			&i.Restarts,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUncompletedTasks = `-- name: GetUncompletedTasks :many
 SELECT
     id, status, created_at, completed_at, restarts
 FROM task
 WHERE status != 'completed' 
-ORDER BY created_at, status, id DESC
+ORDER BY status, created_at, id DESC
 LIMIT $1 OFFSET $2
 `
 
