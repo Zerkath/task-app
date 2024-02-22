@@ -3,30 +3,19 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"task-service/repository"
 	"task-service/rest"
+    "task-service/socket"
 	"task-service/types"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			// TODO: Should be a list of allowed origins
-			return true
-		},
-	}
 
 	router := gin.Default()
 
@@ -61,68 +50,7 @@ func main() {
 	router.GET("/task/:id", rest.GetTaskById)
 	router.DELETE("/task/:id", rest.RemoveTask)
 
-	router.GET("/task/listen", func(c *gin.Context) {
-		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-		if err != nil {
-			log.Println("Error upgrading connection: ", err)
-			return
-		}
-		defer conn.Close()
-
-		// idx := pgtype.UUID{}
-
-		var data types.ListenList
-
-		go func() {
-			for {
-				log.Println("Waiting for new listen list")
-				var newList types.ListenList
-				err := conn.ReadJSON(&newList) // read waits for new message, and only returns if message is received
-
-				// Verify that list was updated, or new message was received between reads
-				if err != nil {
-					println("Error reading from socket: ", err)
-					// connection most likely killed
-					return
-				}
-
-				log.Println("Received listen list: ", newList)
-				data = newList
-			}
-		}()
-
-		for {
-			ids := []pgtype.UUID{}
-			for _, id := range data {
-				idx := pgtype.UUID{}
-				err := idx.Scan(id.String())
-				if err != nil {
-					log.Printf("Error scanning id: %s %e", id, err)
-					continue
-				}
-				ids = append(ids, idx)
-			}
-
-			tasks, err := types.Repository.GetTasksByIds(ctx, ids)
-			if err != nil {
-				log.Printf("Error getting tasks from db with ids %v %e/n", data, err)
-				continue
-			}
-			if len(tasks) == 0 {
-				conn.WriteJSON([]types.Task{})
-			} else {
-				err = conn.WriteJSON(tasks)
-
-				if err != nil {
-					log.Printf("Error writing to socket: %e", err)
-					// maybe connection was killed?
-					// should exit the loop and kill the other goroutine
-					return
-				}
-			}
-            time.Sleep(5 * time.Second)
-		}
-	})
+	router.GET("/task/listen", socket.Listen)
 
 	// disable trusted proxies
 	router.SetTrustedProxies([]string{})
