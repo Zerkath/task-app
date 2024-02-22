@@ -39,8 +39,8 @@
 	.listen-modal {
 		border-radius: 5px;
 		padding: 8px 12px;
-		position: fixed;
-		margin-top: 50px;
+		position: absolute;
+        top: 20%;
 		left: 50%;
 		margin-left: -200px;
 		width: 400px;
