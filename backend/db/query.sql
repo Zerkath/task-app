@@ -16,15 +16,22 @@ SELECT
 FROM task
 WHERE sqlc.narg('status')::task_status IS NULL
 OR status in (sqlc.narg('status')::task_status)
-ORDER BY created_at, status, id DESC
+ORDER BY status, created_at, id DESC
 LIMIT $1 OFFSET $2;
+
+-- name: GetTasksByIds :many
+SELECT
+    id, status, created_at, completed_at, restarts
+FROM task
+WHERE id = ANY(sqlc.arg('ids')::uuid[])
+ORDER BY status, created_at, id DESC;
 
 -- name: GetUncompletedTasks :many
 SELECT
     id, status, created_at, completed_at, restarts
 FROM task
 WHERE status != 'completed' 
-ORDER BY created_at, status, id DESC
+ORDER BY status, created_at, id DESC
 LIMIT $1 OFFSET $2;
 
 -- name: NewTask :one

@@ -26,3 +26,5 @@ type Page struct {
     Page int `json:"page"`
     Data []repository.Task `json:"data"`
 }
+
+type ListenList []uuid.UUID

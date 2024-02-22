@@ -1,31 +1,79 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { pageStore, pageSettings } from '$lib/store';
-    import type { PageSettings } from '$lib/types';
-    import { getPage, changePage, newTask, deleteTask, parseDefault } from '$lib/utils'
+	import type { Message, PageSettings } from '$lib/types';
+	import { getPage, changePage, newTask, deleteTask, parseDefault } from '$lib/utils';
 	import ListenModal from '$lib/ListenModal.svelte';
 
-    let listeningTo: string[] = [];
+	let socket: WebSocket | undefined = undefined;
 
-    let pagination: PageSettings = {
-        pages: 0,
-        currentPage: 0,
-        pageSize: 10,
-    }
+	let listeningTo: string[] = [];
+	let expanded: string | undefined = undefined;
 
-    pageSettings.subscribe((value) => {
-        pagination = value;
-    });
+	let listenData: Message[] = [];
 
-    function listenTo(id: string) {
-        listeningTo = [...listeningTo, id]; // reassign to trigger reactivity
-    }
-    function removeId(id: string) {
-        listeningTo = listeningTo.filter((i) => i !== id);
-    }
+	let pagination: PageSettings = {
+		pages: 0,
+		currentPage: 0,
+		pageSize: 10
+	};
+
+	pageSettings.subscribe((value) => {
+		pagination = value;
+	});
+
+	function listenTo(id: string) {
+        if (expanded === undefined) {
+            expanded = id;
+        }
+		for (const x of listeningTo) {
+			if (x === id) {
+				return; // don't add duplicates
+			}
+		}
+		listeningTo = [...listeningTo, id]; // reassign to trigger reactivity
+		updateListening();
+	}
+
+	function removeId(id: string) {
+        if (expanded === id) {
+            expanded = undefined;
+        }
+		listeningTo = listeningTo.filter((i) => i !== id);
+		updateListening();
+	}
 
 	onMount(async () => {
 		await getPage();
+
+		// Plain socket, that will accept arrays of uuids
+		socket = new WebSocket('ws://localhost:8080/task/listen');
+
+		socket.onopen = () => {
+			console.log('Socket opened');
+		};
+
+		socket.onmessage = (event) => {
+			const data = JSON.parse(event.data);
+			listenData = data;
+			console.log('Socket message', data);
+		};
+
+		socket.onclose = () => {
+			console.log('Socket closed');
+		};
+	});
+
+	function updateListening() {
+		if (socket) {
+			socket.send(JSON.stringify(listeningTo));
+		}
+	}
+
+	onDestroy(() => {
+		if (socket) {
+			socket.close();
+		}
 	});
 </script>
 
@@ -34,7 +82,9 @@
 <p>Page: {pagination.currentPage + 1} out of {pagination.pages}</p>
 
 <button on:click={() => changePage(-1)} disabled={pagination.currentPage < 1}>{'<<'}</button>
-<button on:click={() => changePage(1)} disabled={pagination.currentPage >= pagination.pages - 1}>{'>>'}</button>
+<button on:click={() => changePage(1)} disabled={pagination.currentPage >= pagination.pages - 1}
+	>{'>>'}</button
+>
 <button on:click={() => getPage()}>{'Refresh'}</button>
 
 <input
@@ -53,11 +103,22 @@
 <p>Awaiting updates from following tasks</p>
 
 {#if listeningTo.length === 0}
-    <span>None</span>
+	<span>None</span>
 {/if}
 
-{#each listeningTo as id}
-    <ListenModal bind:id={id} on:close={() => removeId(id)} />
+{#each listenData as entry}
+	<ListenModal
+		bind:id={entry.id}
+		message={entry}
+        minimized={expanded !== entry.id}
+		on:close={() => removeId(entry.id)}
+		on:expand={() => (expanded = entry.id)}
+		on:minimize={() => {
+			if (expanded === entry.id) {
+				expanded = undefined;
+			}
+		}}
+	/>
 {/each}
 
 <table>
@@ -65,7 +126,7 @@
 		<th>id</th>
 		<th>status</th>
 		<th>createdAt</th>
-        <th>completedAt</th>
+		<th>completedAt</th>
 		<th>restarts</th>
 		<th>actions</th>
 	</tr>
@@ -74,7 +135,7 @@
 			<td class="centered">{item.id}</td>
 			<td class={`centered ${item.status}`}>{item.status}</td>
 			<td>{item.createdAt}</td>
-            <td>{parseDefault(item.completedAt)}</td>
+			<td>{parseDefault(item.completedAt)}</td>
 			<td class="centered">{item.restarts}</td>
 			<td class="centered">
 				<button on:click={() => deleteTask(item.id)}>Delete</button>
@@ -87,7 +148,7 @@
 <style lang="scss">
 	table {
 		width: 100%;
-        margin-top: 20px;
+		margin-top: 20px;
 		border-collapse: collapse;
 	}
 
@@ -102,7 +163,7 @@
 		background-color: #f2f2f2;
 	}
 
-    .centered {
-        text-align: center;
-    }
+	.centered {
+		text-align: center;
+	}
 </style>
